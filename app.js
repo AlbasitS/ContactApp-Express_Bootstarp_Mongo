@@ -156,8 +156,8 @@ app.get(`/contact/edit/:nama`, async (req, res) => {
 app.put(
   `/contact`,
   [
-    body(`nama`).custom((value, { req }) => {
-      const duplikat = cekDuplikat(value);
+    body(`nama`).custom(async (value, { req }) => {
+      const duplikat = await Contact.findOne({ nama: value });
       if (value !== req.body.oldNama && duplikat) {
         throw new Error(`Name Already Registered!`);
       }
@@ -169,7 +169,6 @@ app.put(
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      // return res.status(400).json({ errors: errors.array() });
       res.render(`edit-contact`, {
         title: `Form Edit Contact`,
         layout: `layout/mainLayout`,
@@ -177,10 +176,20 @@ app.put(
         contact: req.body,
       });
     } else {
-      updateContacts(req.body);
-      // kirimkan flash message
-      req.flash(`msg`, `contact edited successfully!`);
-      res.redirect(`/contact`);
+      Contact.updateOne(
+        { _id: req.body._id },
+        {
+          $set: {
+            nama: req.body.nama,
+            email: req.body.email,
+            nohp: req.body.nohp,
+          },
+        }
+      ).then((result) => {
+        // kirimkan flash message
+        req.flash(`msg`, `contact edited successfully!`);
+        res.redirect(`/contact`);
+      });
     }
   }
 );
